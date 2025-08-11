@@ -1,4 +1,6 @@
-# 2025-04-17-squished-lattice-longer
+# Avida - Squished lattice experiment analyses
+
+## Dependencies and setup
 
 ```{r}
 library(tidyverse)
@@ -12,6 +14,11 @@ source("https://gist.githubusercontent.com/benmarwick/2a1bb0133ff568cbe28d/raw/f
 ```
 
 ```{r}
+# Check if Rmd is being compiled using bookdown
+bookdown <- exists("bookdown_build")
+```
+
+```{r}
 experiment_slug <- "2025-04-17-squished-lattice-longer"
 working_directory <- paste(
   "experiments",
@@ -20,14 +27,13 @@ working_directory <- paste(
   sep = "/"
 )
 # Adjust working directory if being knitted for bookdown build.
-if (exists("bookdown")) {
-  if (bookdown) {
-    working_directory <- paste0(
-      bookdown_wd_prefix,
-      working_directory
-    )
-  }
+if (bookdown) {
+  working_directory <- paste0(
+    bookdown_wd_prefix,
+    working_directory
+  )
 }
+
 ```
 
 ```{r}
@@ -149,6 +155,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+pop_tasks_total_plt
 ```
 
 ```{r}
@@ -180,6 +188,8 @@ wc_results <- pairwise.wilcox.test(
 
 pop_task_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(pop_task_wc_table, paste0(plot_dir, "/pop_task_wc_table.pdf"))
+
+pop_task_wc_table
 ```
 
 ## Dominant tasks
@@ -222,6 +232,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+dom_tasks_total_plt
 ```
 
 ```{r}
@@ -252,6 +264,8 @@ wc_results <- pairwise.wilcox.test(
 
 dom_task_total_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(dom_task_total_wc_table, paste0(plot_dir, "/dom_task_total_wc_table.pdf"))
+
+dom_task_total_wc_table
 ```
 
 Tasks done by organisms not in dominant taxon:
@@ -301,6 +315,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+nondom_tasks_total_plt
 ```
 
 
@@ -332,6 +348,8 @@ wc_results <- pairwise.wilcox.test(
 
 nondom_pop_task_prop_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(nondom_pop_task_prop_wc_table, paste0(plot_dir, "/nondom_pop_task_prop_wc_table.pdf"))
+
+nondom_pop_task_prop_wc_table
 ```
 
 ## Dominant gestation time
@@ -374,6 +392,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+dom_gestation_time_plt
 ```
 
 ```{r}
@@ -404,6 +424,8 @@ wc_results <- pairwise.wilcox.test(
 
 dom_detail_gestation_time_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(dom_detail_gestation_time_wc_table, paste0(plot_dir, "/dom_detail_gestation_time_wc_table.pdf"))
+
+dom_detail_gestation_time_wc_table
 ```
 
 ## Dominant genome length
@@ -446,6 +468,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+dom_genome_length_plt
 ```
 
 ```{r}
@@ -476,6 +500,8 @@ wc_results <- pairwise.wilcox.test(
 
 dom_detail_genome_length_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(dom_detail_genome_length_wc_table, paste0(plot_dir, "/dom_detail_genome_length_wc_table.pdf"))
+
+dom_detail_genome_length_wc_table
 ```
 
 ## Task profile entropy
@@ -518,6 +544,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+task_profile_entropy_plt
 ```
 
 ```{r}
@@ -558,49 +586,8 @@ ggsave(
   width = 15,
   height = 10
 )
-```
 
-
-## MRCA Changes
-
-```{r}
-mrca_changes_plt <- ggplot(
-    data = data,
-    mapping = aes(
-      x = graph_type,
-      y = phylodiv_mrca_changes,
-      fill = graph_type
-    )
-  ) +
-  geom_flat_violin(
-    position = position_nudge(x = .2, y = 0),
-    alpha = .8
-  ) +
-  geom_point(
-    mapping=aes(color = graph_type),
-    position = position_jitter(width = .15),
-    size = .5,
-    alpha = 0.8
-  ) +
-  geom_boxplot(
-    width = .1,
-    outlier.shape = NA,
-    alpha = 0.5
-  ) +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(
-      angle = 30,
-      hjust = 1
-    )
-  )
-
-ggsave(
-  filename = paste0(plot_dir, "/mrca_changes.pdf"),
-  plot = mrca_changes_plt,
-  width = 15,
-  height = 10
-)
+task_profile_count_plt
 ```
 
 ## Average generation
@@ -643,6 +630,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+avg_generation_plt
 ```
 
 ```{r}
@@ -689,38 +678,8 @@ ggsave(
   width = 15,
   height = 10
 )
-```
 
-```{r}
-pop_task_cnt_ts <- ggplot(
-    data = filter(time_series_data, update <= 10000),
-    mapping = aes(
-      x = update,
-      y = pop_task_total_tasks_done,
-      color = graph_type,
-      fill = graph_type
-    )
-  ) +
-  stat_summary(fun = "mean", geom = "line") +
-  stat_summary(
-    fun.data = "mean_cl_boot",
-    fun.args = list(conf.int = 0.95),
-    geom = "ribbon",
-    alpha = 0.2,
-    linetype = 0
-  ) +
-  facet_wrap(~ENVIRONMENT_FILE) +
-  theme(legend.position = "bottom")
-
-ggsave(
-  plot = pop_task_cnt_ts,
-  filename = paste0(
-    working_directory,
-    "/plots/pop_tasks_ts_10k.pdf"
-  ),
-  width = 15,
-  height = 10
-)
+pop_task_cnt_ts
 ```
 
 ## Average generation over time
@@ -755,40 +714,8 @@ ggsave(
   width = 15,
   height = 10
 )
-```
 
-## MRCA changes over time
-
-```{r}
-mrca_changes_ts <- ggplot(
-    data = time_series_data,
-    mapping = aes(
-      x = update,
-      y = phylodiv_mrca_changes,
-      color = graph_type,
-      fill = graph_type
-    )
-  ) +
-  stat_summary(fun = "mean", geom = "line") +
-  stat_summary(
-    fun.data = "mean_cl_boot",
-    fun.args = list(conf.int = 0.95),
-    geom = "ribbon",
-    alpha = 0.2,
-    linetype = 0
-  ) +
-  facet_wrap(~ENVIRONMENT_FILE) +
-  theme(legend.position = "bottom")
-
-ggsave(
-  plot = mrca_changes_ts,
-  filename = paste0(
-    working_directory,
-    "/plots/mrca_changes_ts.pdf"
-  ),
-  width = 15,
-  height = 10
-)
+time_average_generation_ts
 ```
 
 ## Graph location info
@@ -880,6 +807,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+birth_counts_total_plt
 ```
 
 ### Variance birth Counts
@@ -922,6 +851,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+birth_counts_var_plt
 ```
 
 ### Task appearances total
@@ -964,6 +895,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+task_apps_total_plt
 ```
 
 ```{r}
@@ -1065,6 +998,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+tasks_clustered_plt
 ```
 
 ```{r}
@@ -1106,6 +1041,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+tasks_clustered_i_vals_plt
 ```
 
 ### Clustered birth counts
@@ -1135,6 +1072,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+births_clustered_plot
 ```
 
 ```{r}
@@ -1176,4 +1115,6 @@ ggsave(
   width = 15,
   height = 10
 )
+
+birth_clustered_i_vals_plt
 ```

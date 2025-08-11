@@ -1,4 +1,6 @@
-# 2025-04-17-vary-structs
+# Avida - Varied graph structure experiment analyses
+
+## Dependencies and setup
 
 ```{r}
 library(tidyverse)
@@ -12,6 +14,11 @@ source("https://gist.githubusercontent.com/benmarwick/2a1bb0133ff568cbe28d/raw/f
 ```
 
 ```{r}
+# Check if Rmd is being compiled using bookdown
+bookdown <- exists("bookdown_build")
+```
+
+```{r}
 experiment_slug <- "2025-04-17-vary-structs"
 working_directory <- paste(
   "experiments",
@@ -20,14 +27,13 @@ working_directory <- paste(
   sep = "/"
 )
 # Adjust working directory if being knitted for bookdown build.
-if (exists("bookdown")) {
-  if (bookdown) {
-    working_directory <- paste0(
-      bookdown_wd_prefix,
-      working_directory
-    )
-  }
+if (bookdown) {
+  working_directory <- paste0(
+    bookdown_wd_prefix,
+    working_directory
+  )
 }
+
 ```
 
 ```{r}
@@ -181,6 +187,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+pop_tasks_total_plt
 ```
 
 ```{r}
@@ -211,6 +219,7 @@ wc_results <- pairwise.wilcox.test(
 
 pop_task_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(pop_task_wc_table, paste0(plot_dir, "/pop_task_wc_table.pdf"))
+pop_task_wc_table
 ```
 
 ## Dominant tasks
@@ -253,6 +262,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+dom_tasks_total_plt
 ```
 
 ```{r}
@@ -283,6 +294,7 @@ wc_results <- pairwise.wilcox.test(
 
 dom_task_total_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(dom_task_total_wc_table, paste0(plot_dir, "/dom_task_total_wc_table.pdf"))
+dom_task_total_wc_table
 ```
 
 Tasks done by organisms not in dominant taxon:
@@ -334,6 +346,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+nondom_tasks_total_plt
 ```
 
 ```{r}
@@ -364,6 +378,7 @@ wc_results <- pairwise.wilcox.test(
 
 nondom_pop_task_prop_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(nondom_pop_task_prop_wc_table, paste0(plot_dir, "/nondom_pop_task_prop_wc_table.pdf"))
+nondom_pop_task_prop_wc_table
 ```
 
 
@@ -414,6 +429,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+dom_gestation_time_plt
 ```
 
 ```{r}
@@ -444,6 +461,7 @@ wc_results <- pairwise.wilcox.test(
 
 dom_detail_gestation_time_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(dom_detail_gestation_time_wc_table, paste0(plot_dir, "/dom_detail_gestation_time_wc_table.pdf"))
+dom_detail_gestation_time_wc_table
 ```
 
 ## Dominant genome length
@@ -486,6 +504,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+dom_genome_length_plt
 ```
 
 ```{r}
@@ -516,6 +536,7 @@ wc_results <- pairwise.wilcox.test(
 
 dom_detail_genome_length_wc_table <- kbl(wc_results$p.value) %>% kable_styling()
 save_kable(dom_detail_genome_length_wc_table, paste0(plot_dir, "/dom_detail_genome_length_wc_table.pdf"))
+dom_detail_genome_length_wc_table
 ```
 
 ## Task profile entropy
@@ -558,6 +579,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+task_profile_entropy_plt
 ```
 
 ```{r}
@@ -598,6 +621,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+task_profile_count_plt
 ```
 
 ## Average generation
@@ -640,6 +665,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+avg_generation_plt
 ```
 
 ## Population task count over time
@@ -673,38 +700,8 @@ ggsave(
   width = 15,
   height = 10
 )
-```
 
-```{r}
-pop_task_cnt_ts <- ggplot(
-    data = filter(time_series_data, update <= 10000),
-    mapping = aes(
-      x = update,
-      y = pop_task_total_tasks_done,
-      color = graph_type,
-      fill = graph_type
-    )
-  ) +
-  stat_summary(fun = "mean", geom = "line") +
-  stat_summary(
-    fun.data = "mean_cl_boot",
-    fun.args = list(conf.int = 0.95),
-    geom = "ribbon",
-    alpha = 0.2,
-    linetype = 0
-  ) +
-  facet_wrap(~ENVIRONMENT_FILE) +
-  theme(legend.position = "bottom")
-
-ggsave(
-  plot = pop_task_cnt_ts,
-  filename = paste0(
-    working_directory,
-    "/plots/pop_tasks_ts_10k.pdf"
-  ),
-  width = 15,
-  height = 10
-)
+pop_task_cnt_ts
 ```
 
 ## Average generation over time
@@ -739,6 +736,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+time_average_generation_ts
 ```
 
 
@@ -761,13 +760,16 @@ graph_loc_data <- graph_loc_data %>%
     graph_type = factor(
       graph_type,
       levels = c(
-        "toroidal-lattice_60x60",
-        "toroidal-lattice_30x120",
-        "toroidal-lattice_15x240",
-        "toroidal-lattice_4x900",
-        "toroidal-lattice_3x1200",
-        "toroidal-lattice_2x1800",
-        "cycle"
+        "star",
+        "random-waxman",
+        "comet-kite",
+        "linear-chain",
+        "cycle",
+        "clique-ring",
+        "toroidal-lattice",
+        "well-mixed",
+        "wheel",
+        "windmill"
       )
     ),
     seed = as.factor(seed)
@@ -831,6 +833,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+birth_counts_total_plt
 ```
 
 ### Variance birth Counts
@@ -873,6 +877,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+birth_counts_var_plt
 ```
 
 ### Task appearances total
@@ -915,6 +921,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+task_apps_total_plt
 ```
 
 ```{r}
@@ -931,200 +939,4 @@ wc_results <- pairwise.wilcox.test(
 
 )
 wc_results
-```
-
-
-## Moran's I results
-
-```{r}
-# Load summary data from final update
-morans_i_data_path <- paste(
-  working_directory,
-  "data",
-  "morans_i.csv",
-  sep = "/"
-)
-morans_i_data <- read_csv(morans_i_data_path)
-
-morans_i_data <- morans_i_data %>%
-  mutate(
-    graph_type = str_split_i(
-      graph_file,
-      pattern = ".mat",
-      1
-    )
-  ) %>%
-  mutate(
-    graph_type = factor(
-      graph_type,
-      levels = c(
-        "toroidal-lattice_60x60",
-        "toroidal-lattice_30x120",
-        "toroidal-lattice_15x240",
-        "toroidal-lattice_4x900",
-        "toroidal-lattice_3x1200",
-        "toroidal-lattice_2x1800",
-        "cycle"
-      )
-    ),
-    seed = as.factor(seed)
-  ) %>%
-  filter(
-    graph_type %in% focal_graphs
-  )
-```
-
-### Clustered task appearances
-
-Summarize statistically significant runs where I > 0.
-
-```{r}
-# Identify number of runs where distribution of task appearances is more
-# clustered than we would expect by chance.
-clustered_counts <- morans_i_data %>%
-  filter(
-    (task_morans_i > 0) & (task_p_val <= 0.05)
-  ) %>%
-  group_by(graph_type) %>%
-  summarize(
-    n = n()
-  )
-```
-
-```{r}
-tasks_clustered_plt <- clustered_counts %>%
-  ggplot(
-    aes(
-      x = graph_type,
-      y = n,
-      color = graph_type,
-      fill = graph_type
-    )
-  ) +
-  geom_col() +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(
-      angle = 30,
-      hjust = 1
-    )
-  )
-
-ggsave(
-  filename = paste0(plot_dir, "/tasks_clustered_plt.pdf"),
-  plot = tasks_clustered_plt,
-  width = 15,
-  height = 10
-)
-```
-
-```{r}
-tasks_clustered_i_vals_plt <- morans_i_data %>%
-  filter((task_morans_i > 0) & (task_p_val <= 0.05)) %>%
-  ggplot(
-    mapping = aes(
-      x = graph_type,
-      y = task_morans_i,
-      fill = graph_type
-    )
-  ) +
-  geom_flat_violin(
-    position = position_nudge(x = .2, y = 0),
-    alpha = .8
-  ) +
-  geom_point(
-    mapping=aes(color = graph_type),
-    position = position_jitter(width = .15),
-    size = .5,
-    alpha = 0.8
-  ) +
-  geom_boxplot(
-    width = .1,
-    outlier.shape = NA,
-    alpha = 0.5
-  ) +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(
-      angle = 30,
-      hjust = 1
-    )
-  )
-
-ggsave(
-  filename = paste0(plot_dir, "/tasks_clustered_i_vals_plt.pdf"),
-  plot = tasks_clustered_i_vals_plt,
-  width = 15,
-  height = 10
-)
-```
-
-### Clustered birth counts
-
-```{r}
-births_clustered_plot <- morans_i_data %>%
-  filter((birth_morans_i > 0) & (birth_p_val <= 0.05)) %>%
-  ggplot(
-    aes(
-      x = graph_type,
-      color = graph_type,
-      fill = graph_type
-    )
-  ) +
-  geom_bar() +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(
-      angle = 30,
-      hjust = 1
-    )
-  )
-
-ggsave(
-  filename = paste0(plot_dir, "/births_clustered_plot.pdf"),
-  plot = births_clustered_plot,
-  width = 15,
-  height = 10
-)
-```
-
-```{r}
-birth_clustered_i_vals_plt <- morans_i_data %>%
-  filter((birth_morans_i > 0) & (birth_p_val <= 0.05)) %>%
-  ggplot(
-    mapping = aes(
-      x = graph_type,
-      y = birth_morans_i,
-      fill = graph_type
-    )
-  ) +
-  geom_flat_violin(
-    position = position_nudge(x = .2, y = 0),
-    alpha = .8
-  ) +
-  geom_point(
-    mapping=aes(color = graph_type),
-    position = position_jitter(width = .15),
-    size = .5,
-    alpha = 0.8
-  ) +
-  geom_boxplot(
-    width = .1,
-    outlier.shape = NA,
-    alpha = 0.5
-  ) +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(
-      angle = 30,
-      hjust = 1
-    )
-  )
-
-ggsave(
-  filename = paste0(plot_dir, "/birth_clustered_i_vals_plt.pdf"),
-  plot = birth_clustered_i_vals_plt,
-  width = 15,
-  height = 10
-)
 ```
