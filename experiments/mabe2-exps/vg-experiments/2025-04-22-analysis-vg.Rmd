@@ -1,4 +1,6 @@
-# Simple model - Varied Spatial Structure Experiments
+# Simple model - varied spatial structure experiment analyses
+
+## Dependencies and setup
 
 ```{r}
 library(tidyverse)
@@ -13,11 +15,15 @@ source("https://gist.githubusercontent.com/benmarwick/2a1bb0133ff568cbe28d/raw/f
 ```
 
 ```{r}
-experiment_slug <- "analysis_of_exploratory_data"
+# Check if Rmd is being compiled using bookdown
+bookdown <- exists("bookdown_build")
+```
+
+```{r}
+experiment_slug <- "vg-experiments"
 working_directory <- paste(
-  "third-party",
-  "evo_spatial_discoveries",
   "experiments",
+  "mabe2-exps",
   experiment_slug,
   sep = "/"
 )
@@ -89,6 +95,8 @@ print(run_summary, n = 30)
 
 ### Fitness in smooth gradient landscape
 
+Maximum fitness
+
 ```{r}
 single_gradient_final_fitness_plt <- ggplot(
     data = filter(max_org_data, landscape == "Single gradient"),
@@ -127,9 +135,11 @@ ggsave(
   width = 15,
   height = 10
 )
+
+single_gradient_final_fitness_plt
 ```
 
-Max fitness over time
+Maximum fitness over time
 
 ```{r}
 single_gradient_fitness_ts_plt <- ggplot(
@@ -160,6 +170,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+single_gradient_fitness_ts_plt
 ```
 
 Time to maximum fitness
@@ -234,6 +246,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+single_gradient_gen_max_proj_plt
 ```
 
 Rank ordering of time to max fitness values
@@ -271,6 +285,8 @@ save_kable(
   single_gradient_proj_gen_max_wc_table,
   paste0(plot_dir, "/single_gradient_proj_gen_max_wc_table.pdf")
 )
+
+single_gradient_proj_gen_max_wc_table
 ```
 
 ```{r}
@@ -357,7 +373,6 @@ simple_time_to_max_plt <- ggplot(
       hjust = 1
     )
   )
-simple_time_to_max_plt
 
 ggsave(
   filename = paste0(plot_dir, "/simple_time_to_max.pdf"),
@@ -365,6 +380,8 @@ ggsave(
   width = 8,
   height = 4
 )
+
+simple_time_to_max_plt
 ```
 
 ### Fitness in multi-path landscape
@@ -409,6 +426,8 @@ ggsave(
   width = 6,
   height = 4
 )
+
+multipath_final_fitness_plt
 ```
 
 Max fitness over time
@@ -442,6 +461,8 @@ ggsave(
   width = 15,
   height = 10
 )
+
+multipath_fitness_ts_plt
 ```
 
 Rank ordering of fitness values
@@ -480,6 +501,8 @@ save_kable(
   mp_fitness_wc_table,
   paste0(plot_dir, "/multipath_fitness_wc_table.pdf")
 )
+
+mp_fitness_wc_table
 ```
 
 ### Valleys crossed in valley-crossing landscape
@@ -517,13 +540,15 @@ valleycrossing_valleys_plt <- ggplot(
       hjust = 1
     )
   )
-valleycrossing_valleys_plt
+
 ggsave(
   filename = paste0(plot_dir, "/valleycrossing_valleys_crossed.pdf"),
   plot = valleycrossing_valleys_plt,
   width = 6,
   height = 4
 )
+
+valleycrossing_valleys_plt
 ```
 
 Rank ordering of fitness values
@@ -565,4 +590,6 @@ save_kable(
   vc_valleys_crossed_wc_table,
   paste0(plot_dir, "/valley_crossing_valleys_wc_table.pdf")
 )
+
+vc_valleys_crossed_wc_table
 ```
