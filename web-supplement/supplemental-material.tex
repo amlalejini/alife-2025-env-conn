@@ -1959,6 +1959,2876 @@ Rank ordering of fitness values
 \end{tabular}
 \end{table}
 
+\hypertarget{avida---varied-graph-structure-experiment-analyses}{%
+\chapter{Avida - Varied graph structure experiment analyses}\label{avida---varied-graph-structure-experiment-analyses}}
+
+\hypertarget{dependencies-and-setup-1}{%
+\section{Dependencies and setup}\label{dependencies-and-setup-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\FunctionTok{library}\NormalTok{(cowplot)}
+\FunctionTok{library}\NormalTok{(RColorBrewer)}
+\FunctionTok{library}\NormalTok{(khroma)}
+\FunctionTok{library}\NormalTok{(rstatix)}
+\FunctionTok{library}\NormalTok{(knitr)}
+\FunctionTok{library}\NormalTok{(kableExtra)}
+\FunctionTok{source}\NormalTok{(}\StringTok{"https://gist.githubusercontent.com/benmarwick/2a1bb0133ff568cbe28d/raw/fb53bd97121f7f9ce947837ef1a4c65a73bffb3f/geom\_flat\_violin.R"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check if Rmd is being compiled using bookdown}
+\NormalTok{bookdown }\OtherTok{\textless{}{-}} \FunctionTok{exists}\NormalTok{(}\StringTok{"bookdown\_build"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{experiment\_slug }\OtherTok{\textless{}{-}} \StringTok{"2025{-}04{-}17{-}vary{-}structs"}
+\NormalTok{working\_directory }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+  \StringTok{"experiments"}\NormalTok{,}
+\NormalTok{  experiment\_slug,}
+  \StringTok{"analysis"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\CommentTok{\# Adjust working directory if being knitted for bookdown build.}
+\ControlFlowTok{if}\NormalTok{ (bookdown) \{}
+\NormalTok{  working\_directory }\OtherTok{\textless{}{-}} \FunctionTok{paste0}\NormalTok{(}
+\NormalTok{    bookdown\_wd\_prefix,}
+\NormalTok{    working\_directory}
+\NormalTok{  )}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Configure our default graphing theme}
+\FunctionTok{theme\_set}\NormalTok{(}\FunctionTok{theme\_cowplot}\NormalTok{())}
+\CommentTok{\# Create a directory to store plots}
+\NormalTok{plot\_dir }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"plots"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+
+\FunctionTok{dir.create}\NormalTok{(}
+\NormalTok{  plot\_dir,}
+  \AttributeTok{showWarnings =} \ConstantTok{FALSE}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{focal\_graphs }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \StringTok{"star"}\NormalTok{,}
+  \StringTok{"random{-}waxman"}\NormalTok{,}
+  \StringTok{"comet{-}kite"}\NormalTok{,}
+  \StringTok{"linear{-}chain"}\NormalTok{,}
+  \StringTok{"cycle"}\NormalTok{,}
+  \StringTok{"clique{-}ring"}\NormalTok{,}
+  \StringTok{"toroidal{-}lattice"}\NormalTok{,}
+  \StringTok{"well{-}mixed"}\NormalTok{,}
+  \StringTok{"wheel"}\NormalTok{,}
+  \StringTok{"windmill"}
+\NormalTok{)}
+
+\CommentTok{\# Load summary data from final update}
+\NormalTok{data\_path }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"data"}\NormalTok{,}
+  \StringTok{"summary.csv"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\NormalTok{data }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(data\_path)}
+
+\NormalTok{data }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{graph\_type =} \FunctionTok{factor}\NormalTok{(}
+\NormalTok{      graph\_type,}
+      \AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}
+        \StringTok{"star"}\NormalTok{,}
+        \StringTok{"random{-}waxman"}\NormalTok{,}
+        \StringTok{"comet{-}kite"}\NormalTok{,}
+        \StringTok{"linear{-}chain"}\NormalTok{,}
+        \StringTok{"cycle"}\NormalTok{,}
+        \StringTok{"clique{-}ring"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice"}\NormalTok{,}
+        \StringTok{"well{-}mixed"}\NormalTok{,}
+        \StringTok{"wheel"}\NormalTok{,}
+        \StringTok{"windmill"}
+\NormalTok{      )}
+\NormalTok{    ),}
+    \AttributeTok{ENVIRONMENT\_FILE =} \FunctionTok{as.factor}\NormalTok{(ENVIRONMENT\_FILE)}
+\NormalTok{  )}
+\NormalTok{data }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(}
+\NormalTok{  graph\_type }\SpecialCharTok{\%in\%}\NormalTok{ focal\_graphs}
+\NormalTok{)}
+\NormalTok{data }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(reached\_target\_update)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{time\_series\_path }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"data"}\NormalTok{,}
+  \StringTok{"time\_series.csv"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\NormalTok{time\_series\_data }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(time\_series\_path)}
+
+\NormalTok{time\_series\_data }\OtherTok{\textless{}{-}}\NormalTok{ time\_series\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{graph\_type =} \FunctionTok{factor}\NormalTok{(}
+\NormalTok{      graph\_type,}
+      \AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}
+        \StringTok{"star"}\NormalTok{,}
+        \StringTok{"random{-}waxman"}\NormalTok{,}
+        \StringTok{"comet{-}kite"}\NormalTok{,}
+        \StringTok{"linear{-}chain"}\NormalTok{,}
+        \StringTok{"cycle"}\NormalTok{,}
+        \StringTok{"clique{-}ring"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice"}\NormalTok{,}
+        \StringTok{"well{-}mixed"}\NormalTok{,}
+        \StringTok{"wheel"}\NormalTok{,}
+        \StringTok{"windmill"}
+\NormalTok{      )}
+\NormalTok{    ),}
+    \AttributeTok{ENVIRONMENT\_FILE =} \FunctionTok{as.factor}\NormalTok{(ENVIRONMENT\_FILE),}
+    \AttributeTok{seed =} \FunctionTok{as.factor}\NormalTok{(seed)}
+\NormalTok{  )}
+\NormalTok{time\_series\_data }\OtherTok{\textless{}{-}}\NormalTok{ time\_series\_data }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(seed }\SpecialCharTok{\%in\%}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{seed)}
+\NormalTok{time\_series\_data }\OtherTok{\textless{}{-}}\NormalTok{ time\_series\_data }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(}
+\NormalTok{  graph\_type }\SpecialCharTok{\%in\%}\NormalTok{ focal\_graphs}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check that all runs completed}
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(update }\SpecialCharTok{==} \DecValTok{400000}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{n =} \FunctionTok{n}\NormalTok{()}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 10 x 2
+##    graph_type           n
+##    <fct>            <int>
+##  1 star                50
+##  2 random-waxman       50
+##  3 comet-kite          50
+##  4 linear-chain        50
+##  5 cycle               50
+##  6 clique-ring         50
+##  7 toroidal-lattice    50
+##  8 well-mixed          50
+##  9 wheel               50
+## 10 windmill            50
+\end{verbatim}
+
+\hypertarget{number-of-tasks-completed}{%
+\section{Number of tasks completed}\label{number-of-tasks-completed}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pop\_tasks\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+  \AttributeTok{data =}\NormalTok{ data,}
+  \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+    \AttributeTok{x =}\NormalTok{ graph\_type,}
+    \AttributeTok{y =}\NormalTok{ pop\_task\_total,}
+    \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{  )}
+\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/pop\_tasks\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ pop\_tasks\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{pop\_tasks\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-49-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_pop\_tasks =} \FunctionTok{median}\NormalTok{(pop\_task\_total),}
+    \AttributeTok{mean\_pop\_tasks =} \FunctionTok{mean}\NormalTok{(pop\_task\_total)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_pop\_tasks)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 10 x 4
+##    graph_type        reps median_pop_tasks mean_pop_tasks
+##    <fct>            <int>            <dbl>          <dbl>
+##  1 windmill            50             21.5           27.4
+##  2 toroidal-lattice    50             16             22.4
+##  3 clique-ring         50             17             22.1
+##  4 linear-chain        50             17.5           19.1
+##  5 wheel               50             15.5           17.8
+##  6 cycle               50             14.5           16.6
+##  7 random-waxman       50             12             12.8
+##  8 well-mixed          50             12             12.2
+##  9 comet-kite          50             10             10.3
+## 10 star                50              0              0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ pop\_task\_total }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  pop_task_total by graph_type
+## Kruskal-Wallis chi-squared = 252.46, df = 9, p-value < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{pop\_task\_total,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{pop\_task\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(pop\_task\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/pop\_task\_wc\_table.pdf"}\NormalTok{))}
+\NormalTok{pop\_task\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r|r|r|r|r|r|r}
+\hline
+  & star & random-waxman & comet-kite & linear-chain & cycle & clique-ring & toroidal-lattice & well-mixed & wheel\\
+\hline
+random-waxman & 0 & NA & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+comet-kite & 0 & 0.0755715 & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+linear-chain & 0 & 0.0040473 & 0.0000027 & NA & NA & NA & NA & NA & NA\\
+\hline
+cycle & 0 & 0.1530200 & 0.0002750 & 1.0000000 & NA & NA & NA & NA & NA\\
+\hline
+clique-ring & 0 & 0.0000008 & 0.0000000 & 1.0000000 & 0.0702670 & NA & NA & NA & NA\\
+\hline
+toroidal-lattice & 0 & 0.0000297 & 0.0000000 & 1.0000000 & 0.3032752 & 1.0000000 & NA & NA & NA\\
+\hline
+well-mixed & 0 & 1.0000000 & 0.0542973 & 0.0002739 & 0.0505844 & 0.0000000 & 0.0000018 & NA & NA\\
+\hline
+wheel & 0 & 0.0681554 & 0.0000297 & 1.0000000 & 1.0000000 & 0.2644489 & 0.6033308 & 0.0280284 & NA\\
+\hline
+windmill & 0 & 0.0000000 & 0.0000000 & 0.0058779 & 0.0000035 & 0.0302955 & 0.0302955 & 0.0000000 & 0.000275\\
+\hline
+\end{tabular}
+\end{table}
+
+\hypertarget{dominant-tasks}{%
+\section{Dominant tasks}\label{dominant-tasks}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dom\_tasks\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+  \AttributeTok{data =}\NormalTok{ data,}
+  \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+    \AttributeTok{x =}\NormalTok{ graph\_type,}
+    \AttributeTok{y =}\NormalTok{ dom\_task\_total,}
+    \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{  )}
+\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_tasks\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ dom\_tasks\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{dom\_tasks\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-52-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_dom\_task\_total =} \FunctionTok{median}\NormalTok{(dom\_task\_total),}
+    \AttributeTok{mean\_dom\_task\_total =} \FunctionTok{mean}\NormalTok{(dom\_task\_total)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_dom\_task\_total)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 10 x 4
+##    graph_type        reps median_dom_task_total mean_dom_task_total
+##    <fct>            <int>                 <dbl>               <dbl>
+##  1 toroidal-lattice    50                    15               21.4 
+##  2 clique-ring         50                    15               19.2 
+##  3 windmill            50                    14               16.1 
+##  4 linear-chain        50                    12               13.6 
+##  5 cycle               50                    11               12.6 
+##  6 wheel               50                    11               12.4 
+##  7 random-waxman       50                    10                9.92
+##  8 well-mixed          50                    10                9.62
+##  9 comet-kite          50                     0                0.42
+## 10 star                50                     0                0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ dom\_task\_total }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  dom_task_total by graph_type
+## Kruskal-Wallis chi-squared = 262.43, df = 9, p-value < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{dom\_task\_total,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{dom\_task\_total\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(dom\_task\_total\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_task\_total\_wc\_table.pdf"}\NormalTok{))}
+\NormalTok{dom\_task\_total\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r|r|r|r|r|r|r}
+\hline
+  & star & random-waxman & comet-kite & linear-chain & cycle & clique-ring & toroidal-lattice & well-mixed & wheel\\
+\hline
+random-waxman & 0.0000000 & NA & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+comet-kite & 0.9646146 & 0.0000000 & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+linear-chain & 0.0000000 & 0.4710663 & 0 & NA & NA & NA & NA & NA & NA\\
+\hline
+cycle & 0.0000000 & 0.9646146 & 0 & 1.0000000 & NA & NA & NA & NA & NA\\
+\hline
+clique-ring & 0.0000000 & 0.0000042 & 0 & 0.0907079 & 0.0083936 & NA & NA & NA & NA\\
+\hline
+toroidal-lattice & 0.0000000 & 0.0000001 & 0 & 0.0112805 & 0.0003268 & 1.0000000 & NA & NA & NA\\
+\hline
+well-mixed & 0.0000000 & 1.0000000 & 0 & 0.5076566 & 0.9646146 & 0.0000000 & 0.0000000 & NA & NA\\
+\hline
+wheel & 0.0000000 & 0.9646146 & 0 & 1.0000000 & 1.0000000 & 0.0033520 & 0.0001346 & 0.9865397 & NA\\
+\hline
+windmill & 0.0000000 & 0.0009903 & 0 & 0.9865397 & 0.4321933 & 0.9865397 & 0.7677082 & 0.0000305 & 0.2316497\\
+\hline
+\end{tabular}
+\end{table}
+
+Tasks done by organisms not in dominant taxon:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{nondom\_pop\_task\_prop =} \FunctionTok{case\_when}\NormalTok{(}
+\NormalTok{      pop\_task\_total }\SpecialCharTok{==} \DecValTok{0} \SpecialCharTok{\textasciitilde{}} \DecValTok{0}\NormalTok{,}
+      \AttributeTok{.default =}\NormalTok{ (pop\_task\_total }\SpecialCharTok{{-}}\NormalTok{ dom\_task\_total) }\SpecialCharTok{/}\NormalTok{ (pop\_task\_total)}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\NormalTok{nondom\_tasks\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ nondom\_pop\_task\_prop,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/non\_dom\_tasks\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ nondom\_tasks\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{nondom\_tasks\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-55-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_nondom\_pop\_task\_prop =} \FunctionTok{median}\NormalTok{(nondom\_pop\_task\_prop),}
+    \AttributeTok{mean\_nondom\_pop\_task\_prop =} \FunctionTok{mean}\NormalTok{(nondom\_pop\_task\_prop)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_nondom\_pop\_task\_prop)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 10 x 4
+##    graph_type        reps median_nondom_pop_task_prop mean_nondom_pop_task_prop
+##    <fct>            <int>                       <dbl>                     <dbl>
+##  1 comet-kite          50                      1                         0.952 
+##  2 windmill            50                      0.316                     0.398 
+##  3 wheel               50                      0.258                     0.264 
+##  4 linear-chain        50                      0.197                     0.234 
+##  5 random-waxman       50                      0.106                     0.222 
+##  6 cycle               50                      0.196                     0.206 
+##  7 well-mixed          50                      0.0839                    0.177 
+##  8 clique-ring         50                      0.0917                    0.154 
+##  9 toroidal-lattice    50                      0.0245                    0.0432
+## 10 star                50                      0                         0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ nondom\_pop\_task\_prop }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  nondom_pop_task_prop by graph_type
+## Kruskal-Wallis chi-squared = 256.7, df = 9, p-value < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{nondom\_pop\_task\_prop,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{nondom\_pop\_task\_prop\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(nondom\_pop\_task\_prop\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/nondom\_pop\_task\_prop\_wc\_table.pdf"}\NormalTok{))}
+\NormalTok{nondom\_pop\_task\_prop\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r|r|r|r|r|r|r}
+\hline
+  & star & random-waxman & comet-kite & linear-chain & cycle & clique-ring & toroidal-lattice & well-mixed & wheel\\
+\hline
+random-waxman & 0e+00 & NA & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+comet-kite & 0e+00 & 0.0000000 & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+linear-chain & 0e+00 & 0.9560919 & 0 & NA & NA & NA & NA & NA & NA\\
+\hline
+cycle & 0e+00 & 1.0000000 & 0 & 1.0000000 & NA & NA & NA & NA & NA\\
+\hline
+clique-ring & 0e+00 & 1.0000000 & 0 & 0.1142983 & 0.1337364 & NA & NA & NA & NA\\
+\hline
+toroidal-lattice & 2e-07 & 0.0001655 & 0 & 0.0000044 & 0.0000102 & 0.0019354 & NA & NA & NA\\
+\hline
+well-mixed & 0e+00 & 0.4737074 & 0 & 0.0370381 & 0.0501364 & 1.0000000 & 0.4737074 & NA & NA\\
+\hline
+wheel & 0e+00 & 0.0560536 & 0 & 1.0000000 & 0.8350382 & 0.0002916 & 0.0000000 & 0.0003351 & NA\\
+\hline
+windmill & 0e+00 & 0.0000660 & 0 & 0.0129065 & 0.0022312 & 0.0000000 & 0.0000000 & 0.0000002 & 0.1337364\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# kruskal.test(}
+\CommentTok{\#   formula = dom\_task\_total \textasciitilde{} graph\_type,}
+\CommentTok{\#   data = filter(completed\_runs\_data)}
+\CommentTok{\# )}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{dominant-gestation-time}{%
+\section{Dominant gestation time}\label{dominant-gestation-time}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dom\_gestation\_time\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ dom\_detail\_gestation\_time,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_gestation\_time.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ dom\_gestation\_time\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{dom\_gestation\_time\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-59-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_dom\_detail\_gestation\_time =} \FunctionTok{median}\NormalTok{(dom\_detail\_gestation\_time),}
+    \AttributeTok{mean\_dom\_detail\_gestation\_time =} \FunctionTok{mean}\NormalTok{(dom\_detail\_gestation\_time)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_dom\_detail\_gestation\_time)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 10 x 4
+##    graph_type        reps median_dom_detail_gestation_t~1 mean_dom_detail_gest~2
+##    <fct>            <int>                           <dbl>                  <dbl>
+##  1 toroidal-lattice    50                            300.                   480.
+##  2 clique-ring         50                            324.                   440.
+##  3 random-waxman       50                            360                    393.
+##  4 star                50                            389                    389 
+##  5 comet-kite          50                            389                    375.
+##  6 windmill            50                            204.                   315.
+##  7 well-mixed          50                            260.                   281.
+##  8 linear-chain        50                            164                    208.
+##  9 wheel               50                            152.                   187.
+## 10 cycle               50                            144.                   169.
+## # i abbreviated names: 1: median_dom_detail_gestation_time,
+## #   2: mean_dom_detail_gestation_time
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ dom\_detail\_gestation\_time }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  dom_detail_gestation_time by graph_type
+## Kruskal-Wallis chi-squared = 197.97, df = 9, p-value < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{dom\_detail\_gestation\_time,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{dom\_detail\_gestation\_time\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(dom\_detail\_gestation\_time\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_detail\_gestation\_time\_wc\_table.pdf"}\NormalTok{))}
+\NormalTok{dom\_detail\_gestation\_time\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r|r|r|r|r|r|r}
+\hline
+  & star & random-waxman & comet-kite & linear-chain & cycle & clique-ring & toroidal-lattice & well-mixed & wheel\\
+\hline
+random-waxman & 1.0000000 & NA & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+comet-kite & 1.0000000 & 1.0000000 & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+linear-chain & 0.0000000 & 0.0000161 & 0.0000000 & NA & NA & NA & NA & NA & NA\\
+\hline
+cycle & 0.0000000 & 0.0000001 & 0.0000000 & 1.0000000 & NA & NA & NA & NA & NA\\
+\hline
+clique-ring & 0.0039456 & 1.0000000 & 0.0375642 & 0.0000080 & 0.0000000 & NA & NA & NA & NA\\
+\hline
+toroidal-lattice & 0.1400273 & 1.0000000 & 0.5320337 & 0.0000001 & 0.0000000 & 1.0000000 & NA & NA & NA\\
+\hline
+well-mixed & 0.0000000 & 0.0000135 & 0.0000000 & 0.1875321 & 0.0000565 & 0.0001086 & 1.61e-05 & NA & NA\\
+\hline
+wheel & 0.0000000 & 0.0000003 & 0.0000000 & 1.0000000 & 1.0000000 & 0.0000000 & 0.00e+00 & 0.0012044 & NA\\
+\hline
+windmill & 0.0000430 & 0.0038095 & 0.0005370 & 0.2673588 & 0.0015818 & 0.0015818 & 4.30e-05 & 0.5320337 & 0.0088282\\
+\hline
+\end{tabular}
+\end{table}
+
+\hypertarget{dominant-genome-length}{%
+\section{Dominant genome length}\label{dominant-genome-length}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dom\_genome\_length\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ dom\_detail\_genome\_length,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_genome\_length.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ dom\_genome\_length\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{dom\_genome\_length\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-62-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_dom\_detail\_genome\_length =} \FunctionTok{median}\NormalTok{(dom\_detail\_genome\_length),}
+    \AttributeTok{mean\_dom\_detail\_genome\_length =} \FunctionTok{mean}\NormalTok{(dom\_detail\_genome\_length)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_dom\_detail\_genome\_length)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 10 x 4
+##    graph_type        reps median_dom_detail_genome_length mean_dom_detail_geno~1
+##    <fct>            <int>                           <dbl>                  <dbl>
+##  1 random-waxman       50                           268.                   298. 
+##  2 clique-ring         50                           197                    230. 
+##  3 toroidal-lattice    50                           183                    203. 
+##  4 well-mixed          50                           175                    177. 
+##  5 windmill            50                           111                    139. 
+##  6 comet-kite          50                           100                    113. 
+##  7 star                50                           100                    100  
+##  8 wheel               50                            64.5                   68.2
+##  9 linear-chain        50                            65.5                   64.4
+## 10 cycle               50                            61                     61.2
+## # i abbreviated name: 1: mean_dom_detail_genome_length
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ dom\_detail\_genome\_length }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  dom_detail_genome_length by graph_type
+## Kruskal-Wallis chi-squared = 423.75, df = 9, p-value < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{dom\_detail\_genome\_length,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{dom\_detail\_genome\_length\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(dom\_detail\_genome\_length\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_detail\_genome\_length\_wc\_table.pdf"}\NormalTok{))}
+\NormalTok{dom\_detail\_genome\_length\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r|r|r|r|r|r|r}
+\hline
+  & star & random-waxman & comet-kite & linear-chain & cycle & clique-ring & toroidal-lattice & well-mixed & wheel\\
+\hline
+random-waxman & 0.0000000 & NA & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+comet-kite & 0.1373564 & 0.0000000 & NA & NA & NA & NA & NA & NA & NA\\
+\hline
+linear-chain & 0.0000000 & 0.0000000 & 0 & NA & NA & NA & NA & NA & NA\\
+\hline
+cycle & 0.0000000 & 0.0000000 & 0 & 0.85562 & NA & NA & NA & NA & NA\\
+\hline
+clique-ring & 0.0000000 & 0.0007957 & 0 & 0.00000 & 0.0000000 & NA & NA & NA & NA\\
+\hline
+toroidal-lattice & 0.0000000 & 0.0000044 & 0 & 0.00000 & 0.0000000 & 0.1373564 & NA & NA & NA\\
+\hline
+well-mixed & 0.0000000 & 0.0000000 & 0 & 0.00000 & 0.0000000 & 0.0016198 & 0.85562 & NA & NA\\
+\hline
+wheel & 0.0000000 & 0.0000000 & 0 & 0.85562 & 0.4828684 & 0.0000000 & 0.00000 & 0 & NA\\
+\hline
+windmill & 0.0000000 & 0.0000000 & 0 & 0.00000 & 0.0000000 & 0.0000000 & 0.00000 & 0 & 0\\
+\hline
+\end{tabular}
+\end{table}
+
+\hypertarget{task-profile-entropy}{%
+\section{Task profile entropy}\label{task-profile-entropy}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{task\_profile\_entropy\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ task\_profile\_entropy,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/task\_profile\_entropy.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ task\_profile\_entropy\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{task\_profile\_entropy\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-65-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{task\_profile\_count\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ task\_profile\_count,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/task\_profile\_count.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ task\_profile\_count\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{task\_profile\_count\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-66-1.pdf}
+
+\hypertarget{average-generation}{%
+\section{Average generation}\label{average-generation}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{avg\_generation\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ time\_average\_generation,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/avg\_generation.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ avg\_generation\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{avg\_generation\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-67-1.pdf}
+
+\hypertarget{population-task-count-over-time}{%
+\section{Population task count over time}\label{population-task-count-over-time}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pop\_task\_cnt\_ts }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ time\_series\_data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ update,}
+      \AttributeTok{y =}\NormalTok{ pop\_task\_total\_tasks\_done,}
+      \AttributeTok{color =}\NormalTok{ graph\_type,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{stat\_summary}\NormalTok{(}\AttributeTok{fun =} \StringTok{"mean"}\NormalTok{, }\AttributeTok{geom =} \StringTok{"line"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{stat\_summary}\NormalTok{(}
+    \AttributeTok{fun.data =} \StringTok{"mean\_cl\_boot"}\NormalTok{,}
+    \AttributeTok{fun.args =} \FunctionTok{list}\NormalTok{(}\AttributeTok{conf.int =} \FloatTok{0.95}\NormalTok{),}
+    \AttributeTok{geom =} \StringTok{"ribbon"}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.2}\NormalTok{,}
+    \AttributeTok{linetype =} \DecValTok{0}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{plot =}\NormalTok{ pop\_task\_cnt\_ts,}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(}
+\NormalTok{    working\_directory,}
+    \StringTok{"/plots/pop\_tasks\_ts.pdf"}
+\NormalTok{  ),}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{pop\_task\_cnt\_ts}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-68-1.pdf}
+
+\hypertarget{average-generation-over-time}{%
+\section{Average generation over time}\label{average-generation-over-time}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{time\_average\_generation\_ts }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ time\_series\_data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ update,}
+      \AttributeTok{y =}\NormalTok{ time\_average\_generation,}
+      \AttributeTok{color =}\NormalTok{ graph\_type,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{stat\_summary}\NormalTok{(}\AttributeTok{fun =} \StringTok{"mean"}\NormalTok{, }\AttributeTok{geom =} \StringTok{"line"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{stat\_summary}\NormalTok{(}
+    \AttributeTok{fun.data =} \StringTok{"mean\_cl\_boot"}\NormalTok{,}
+    \AttributeTok{fun.args =} \FunctionTok{list}\NormalTok{(}\AttributeTok{conf.int =} \FloatTok{0.95}\NormalTok{),}
+    \AttributeTok{geom =} \StringTok{"ribbon"}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.2}\NormalTok{,}
+    \AttributeTok{linetype =} \DecValTok{0}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{facet\_wrap}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{ENVIRONMENT\_FILE) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{plot =}\NormalTok{ time\_average\_generation\_ts,}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(}
+\NormalTok{    working\_directory,}
+    \StringTok{"/plots/time\_average\_generation\_ts.pdf"}
+\NormalTok{  ),}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{time\_average\_generation\_ts}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-69-1.pdf}
+
+\hypertarget{graph-location-info}{%
+\section{Graph location info}\label{graph-location-info}}
+
+Analyze graph\_birth\_info\_annotated.csv
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Load summary data from final update}
+\NormalTok{graph\_loc\_data\_path }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"data"}\NormalTok{,}
+  \StringTok{"graph\_birth\_info\_annotated.csv"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\NormalTok{graph\_loc\_data }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(graph\_loc\_data\_path)}
+
+\NormalTok{graph\_loc\_data }\OtherTok{\textless{}{-}}\NormalTok{ graph\_loc\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{graph\_type =} \FunctionTok{factor}\NormalTok{(}
+\NormalTok{      graph\_type,}
+      \AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}
+        \StringTok{"star"}\NormalTok{,}
+        \StringTok{"random{-}waxman"}\NormalTok{,}
+        \StringTok{"comet{-}kite"}\NormalTok{,}
+        \StringTok{"linear{-}chain"}\NormalTok{,}
+        \StringTok{"cycle"}\NormalTok{,}
+        \StringTok{"clique{-}ring"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice"}\NormalTok{,}
+        \StringTok{"well{-}mixed"}\NormalTok{,}
+        \StringTok{"wheel"}\NormalTok{,}
+        \StringTok{"windmill"}
+\NormalTok{      )}
+\NormalTok{    ),}
+    \AttributeTok{seed =} \FunctionTok{as.factor}\NormalTok{(seed)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(}
+\NormalTok{    graph\_type }\SpecialCharTok{\%in\%}\NormalTok{ focal\_graphs}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+Summarize by seed
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{graph\_loc\_data\_summary }\OtherTok{\textless{}{-}}\NormalTok{ graph\_loc\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(seed, graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{births\_var =} \FunctionTok{var}\NormalTok{(births),}
+    \AttributeTok{births\_total =} \FunctionTok{sum}\NormalTok{(births),}
+    \AttributeTok{task\_apps\_total =} \FunctionTok{sum}\NormalTok{(task\_appearances),}
+    \AttributeTok{task\_apps\_var =} \FunctionTok{var}\NormalTok{(task\_appearances)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ungroup}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{total-birth-counts}{%
+\subsection{Total birth Counts}\label{total-birth-counts}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{birth\_counts\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ graph\_loc\_data\_summary,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ births\_total,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/birth\_counts\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ birth\_counts\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{birth\_counts\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-72-1.pdf}
+
+\hypertarget{variance-birth-counts}{%
+\subsection{Variance birth Counts}\label{variance-birth-counts}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{birth\_counts\_var\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ graph\_loc\_data\_summary,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ births\_var,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/birth\_counts\_var.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ birth\_counts\_var\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{birth\_counts\_var\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-73-1.pdf}
+
+\hypertarget{task-appearances-total}{%
+\subsection{Task appearances total}\label{task-appearances-total}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{task\_apps\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ graph\_loc\_data\_summary,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ task\_apps\_total,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/task\_apps\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ task\_apps\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{task\_apps\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-74-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ task\_apps\_total }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ graph\_loc\_data\_summary}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  task_apps_total by graph_type
+## Kruskal-Wallis chi-squared = 288.67, df = 9, p-value < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ graph\_loc\_data\_summary}\SpecialCharTok{$}\NormalTok{task\_apps\_total,}
+  \AttributeTok{g =}\NormalTok{ graph\_loc\_data\_summary}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+
+\NormalTok{)}
+\NormalTok{wc\_results}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Pairwise comparisons using Wilcoxon rank sum test with continuity correction 
+## 
+## data:  graph_loc_data_summary$task_apps_total and graph_loc_data_summary$graph_type 
+## 
+##                  star    random-waxman comet-kite linear-chain cycle  
+## random-waxman    < 2e-16 -             -          -            -      
+## comet-kite       < 2e-16 0.00089       -          -            -      
+## linear-chain     < 2e-16 2.8e-08       2.7e-11    -            -      
+## cycle            < 2e-16 8.3e-07       6.3e-11    1.00000      -      
+## clique-ring      < 2e-16 4.4e-10       2.0e-14    1.00000      1.00000
+## toroidal-lattice < 2e-16 1.2e-08       3.7e-14    1.00000      1.00000
+## well-mixed       < 2e-16 1.00000       3.5e-06    8.8e-07      2.1e-05
+## wheel            < 2e-16 1.4e-08       8.1e-14    1.00000      1.00000
+## windmill         < 2e-16 2.7e-11       4.3e-15    1.00000      1.00000
+##                  clique-ring toroidal-lattice well-mixed wheel  
+## random-waxman    -           -                -          -      
+## comet-kite       -           -                -          -      
+## linear-chain     -           -                -          -      
+## cycle            -           -                -          -      
+## clique-ring      -           -                -          -      
+## toroidal-lattice 1.00000     -                -          -      
+## well-mixed       2.3e-08     7.7e-07          -          -      
+## wheel            1.00000     1.00000          5.0e-07    -      
+## windmill         1.00000     1.00000          1.2e-09    1.00000
+## 
+## P value adjustment method: holm
+\end{verbatim}
+
+\hypertarget{avida---squished-lattice-experiment-analyses}{%
+\chapter{Avida - Squished lattice experiment analyses}\label{avida---squished-lattice-experiment-analyses}}
+
+\hypertarget{dependencies-and-setup-2}{%
+\section{Dependencies and setup}\label{dependencies-and-setup-2}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\FunctionTok{library}\NormalTok{(cowplot)}
+\FunctionTok{library}\NormalTok{(RColorBrewer)}
+\FunctionTok{library}\NormalTok{(khroma)}
+\FunctionTok{library}\NormalTok{(rstatix)}
+\FunctionTok{library}\NormalTok{(knitr)}
+\FunctionTok{library}\NormalTok{(kableExtra)}
+\FunctionTok{source}\NormalTok{(}\StringTok{"https://gist.githubusercontent.com/benmarwick/2a1bb0133ff568cbe28d/raw/fb53bd97121f7f9ce947837ef1a4c65a73bffb3f/geom\_flat\_violin.R"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check if Rmd is being compiled using bookdown}
+\NormalTok{bookdown }\OtherTok{\textless{}{-}} \FunctionTok{exists}\NormalTok{(}\StringTok{"bookdown\_build"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{experiment\_slug }\OtherTok{\textless{}{-}} \StringTok{"2025{-}04{-}17{-}squished{-}lattice{-}longer"}
+\NormalTok{working\_directory }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+  \StringTok{"experiments"}\NormalTok{,}
+\NormalTok{  experiment\_slug,}
+  \StringTok{"analysis"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\CommentTok{\# Adjust working directory if being knitted for bookdown build.}
+\ControlFlowTok{if}\NormalTok{ (bookdown) \{}
+\NormalTok{  working\_directory }\OtherTok{\textless{}{-}} \FunctionTok{paste0}\NormalTok{(}
+\NormalTok{    bookdown\_wd\_prefix,}
+\NormalTok{    working\_directory}
+\NormalTok{  )}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Configure our default graphing theme}
+\FunctionTok{theme\_set}\NormalTok{(}\FunctionTok{theme\_cowplot}\NormalTok{())}
+\CommentTok{\# Create a directory to store plots}
+\NormalTok{plot\_dir }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"plots"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+
+\FunctionTok{dir.create}\NormalTok{(}
+\NormalTok{  plot\_dir,}
+  \AttributeTok{showWarnings =} \ConstantTok{FALSE}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{focal\_graphs }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \StringTok{"toroidal{-}lattice\_60x60"}\NormalTok{,}
+  \StringTok{"toroidal{-}lattice\_15x240"}\NormalTok{,}
+  \StringTok{"toroidal{-}lattice\_2x1800"}\NormalTok{,}
+  \StringTok{"cycle"}
+\NormalTok{)}
+
+\CommentTok{\# Load summary data from final update}
+\NormalTok{data\_path }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"data"}\NormalTok{,}
+  \StringTok{"summary.csv"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\NormalTok{data }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(data\_path)}
+
+\NormalTok{data }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(graph\_type }\SpecialCharTok{\%in\%}\NormalTok{ focal\_graphs) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{graph\_type =} \FunctionTok{factor}\NormalTok{(}
+\NormalTok{      graph\_type,}
+      \AttributeTok{levels =}\NormalTok{ focal\_graphs}
+\NormalTok{    ),}
+    \AttributeTok{ENVIRONMENT\_FILE =} \FunctionTok{as.factor}\NormalTok{(ENVIRONMENT\_FILE)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{time\_series\_path }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"data"}\NormalTok{,}
+  \StringTok{"time\_series.csv"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\NormalTok{time\_series\_data }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(time\_series\_path)}
+
+\NormalTok{time\_series\_data }\OtherTok{\textless{}{-}}\NormalTok{ time\_series\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(graph\_type }\SpecialCharTok{\%in\%}\NormalTok{ focal\_graphs) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{graph\_type =} \FunctionTok{factor}\NormalTok{(}
+\NormalTok{      graph\_type,}
+      \AttributeTok{levels =}\NormalTok{ focal\_graphs}
+\NormalTok{    ),}
+    \AttributeTok{ENVIRONMENT\_FILE =} \FunctionTok{as.factor}\NormalTok{(ENVIRONMENT\_FILE),}
+    \AttributeTok{seed =} \FunctionTok{as.factor}\NormalTok{(seed)}
+\NormalTok{  )}
+\NormalTok{time\_series\_data }\OtherTok{\textless{}{-}}\NormalTok{ time\_series\_data }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(seed }\SpecialCharTok{\%in\%}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{seed)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check that all runs completed}
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(update }\SpecialCharTok{==} \DecValTok{400000}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{n =} \FunctionTok{n}\NormalTok{()}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 4 x 2
+##   graph_type                  n
+##   <fct>                   <int>
+## 1 toroidal-lattice_60x60     50
+## 2 toroidal-lattice_15x240    50
+## 3 toroidal-lattice_2x1800    50
+## 4 cycle                      50
+\end{verbatim}
+
+\hypertarget{number-of-tasks-completed-1}{%
+\section{Number of tasks completed}\label{number-of-tasks-completed-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pop\_tasks\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+  \AttributeTok{data =}\NormalTok{ data,}
+  \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+    \AttributeTok{x =}\NormalTok{ graph\_type,}
+    \AttributeTok{y =}\NormalTok{ pop\_task\_total,}
+    \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{  )}
+\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/pop\_tasks\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ pop\_tasks\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{pop\_tasks\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-83-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_pop\_tasks =} \FunctionTok{median}\NormalTok{(pop\_task\_total),}
+    \AttributeTok{mean\_pop\_tasks =} \FunctionTok{mean}\NormalTok{(pop\_task\_total)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_pop\_tasks)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 4 x 4
+##   graph_type               reps median_pop_tasks mean_pop_tasks
+##   <fct>                   <int>            <dbl>          <dbl>
+## 1 toroidal-lattice_2x1800    50               27           36.6
+## 2 toroidal-lattice_15x240    50               20           25.2
+## 3 toroidal-lattice_60x60     50               21           24.6
+## 4 cycle                      50               16           16.7
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ pop\_task\_total }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  pop_task_total by graph_type
+## Kruskal-Wallis chi-squared = 34.696, df = 3, p-value = 1.412e-07
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{pop\_task\_total,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+
+\NormalTok{)}
+
+\NormalTok{pop\_task\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(pop\_task\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/pop\_task\_wc\_table.pdf"}\NormalTok{))}
+
+\NormalTok{pop\_task\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r}
+\hline
+  & toroidal-lattice\_60x60 & toroidal-lattice\_15x240 & toroidal-lattice\_2x1800\\
+\hline
+toroidal-lattice\_15x240 & 0.9011082 & NA & NA\\
+\hline
+toroidal-lattice\_2x1800 & 0.0313929 & 0.0386732 & NA\\
+\hline
+cycle & 0.0010892 & 0.0002773 & 8e-07\\
+\hline
+\end{tabular}
+\end{table}
+
+\hypertarget{dominant-tasks-1}{%
+\section{Dominant tasks}\label{dominant-tasks-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dom\_tasks\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+  \AttributeTok{data =}\NormalTok{ data,}
+  \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+    \AttributeTok{x =}\NormalTok{ graph\_type,}
+    \AttributeTok{y =}\NormalTok{ dom\_task\_total,}
+    \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{  )}
+\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_tasks\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ dom\_tasks\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{dom\_tasks\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-86-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_dom\_task\_total =} \FunctionTok{median}\NormalTok{(dom\_task\_total),}
+    \AttributeTok{mean\_dom\_task\_total =} \FunctionTok{mean}\NormalTok{(dom\_task\_total)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_dom\_task\_total)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 4 x 4
+##   graph_type               reps median_dom_task_total mean_dom_task_total
+##   <fct>                   <int>                 <dbl>               <dbl>
+## 1 toroidal-lattice_2x1800    50                  23                  30.1
+## 2 toroidal-lattice_15x240    50                  19.5                24.1
+## 3 toroidal-lattice_60x60     50                  20                  23.5
+## 4 cycle                      50                  10                  11.5
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ dom\_task\_total }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  dom_task_total by graph_type
+## Kruskal-Wallis chi-squared = 62.705, df = 3, p-value = 1.553e-13
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{dom\_task\_total,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{dom\_task\_total\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(dom\_task\_total\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_task\_total\_wc\_table.pdf"}\NormalTok{))}
+
+\NormalTok{dom\_task\_total\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r}
+\hline
+  & toroidal-lattice\_60x60 & toroidal-lattice\_15x240 & toroidal-lattice\_2x1800\\
+\hline
+toroidal-lattice\_15x240 & 0.8224738 & NA & NA\\
+\hline
+toroidal-lattice\_2x1800 & 0.4960864 & 0.5387756 & NA\\
+\hline
+cycle & 0.0000000 & 0.0000000 & 0\\
+\hline
+\end{tabular}
+\end{table}
+
+Tasks done by organisms not in dominant taxon:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{nondom\_pop\_task\_prop =} \FunctionTok{case\_when}\NormalTok{(}
+\NormalTok{      pop\_task\_total }\SpecialCharTok{==} \DecValTok{0} \SpecialCharTok{\textasciitilde{}} \DecValTok{0}\NormalTok{,}
+      \AttributeTok{.default =}\NormalTok{ (pop\_task\_total }\SpecialCharTok{{-}}\NormalTok{ dom\_task\_total) }\SpecialCharTok{/}\NormalTok{ (pop\_task\_total)}
+\NormalTok{    )}
+\NormalTok{  )}
+\NormalTok{nondom\_tasks\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ nondom\_pop\_task\_prop,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/non\_dom\_tasks\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ nondom\_tasks\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{nondom\_tasks\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-89-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_nondom\_pop\_task\_prop =} \FunctionTok{median}\NormalTok{(nondom\_pop\_task\_prop),}
+    \AttributeTok{mean\_nondom\_pop\_task\_prop =} \FunctionTok{mean}\NormalTok{(nondom\_pop\_task\_prop)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_nondom\_pop\_task\_prop)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 4 x 4
+##   graph_type               reps median_nondom_pop_task_~1 mean_nondom_pop_task~2
+##   <fct>                   <int>                     <dbl>                  <dbl>
+## 1 cycle                      50                    0.25                   0.276 
+## 2 toroidal-lattice_2x1800    50                    0.140                  0.168 
+## 3 toroidal-lattice_60x60     50                    0.0340                 0.0498
+## 4 toroidal-lattice_15x240    50                    0.0294                 0.0467
+## # i abbreviated names: 1: median_nondom_pop_task_prop,
+## #   2: mean_nondom_pop_task_prop
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ nondom\_pop\_task\_prop }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  nondom_pop_task_prop by graph_type
+## Kruskal-Wallis chi-squared = 72.727, df = 3, p-value = 1.112e-15
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{nondom\_pop\_task\_prop,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{nondom\_pop\_task\_prop\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(nondom\_pop\_task\_prop\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/nondom\_pop\_task\_prop\_wc\_table.pdf"}\NormalTok{))}
+
+\NormalTok{nondom\_pop\_task\_prop\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r}
+\hline
+  & toroidal-lattice\_60x60 & toroidal-lattice\_15x240 & toroidal-lattice\_2x1800\\
+\hline
+toroidal-lattice\_15x240 & 0.9884975 & NA & NA\\
+\hline
+toroidal-lattice\_2x1800 & 0.0000002 & 2e-07 & NA\\
+\hline
+cycle & 0.0000000 & 0e+00 & 0.0066588\\
+\hline
+\end{tabular}
+\end{table}
+
+\hypertarget{dominant-gestation-time-1}{%
+\section{Dominant gestation time}\label{dominant-gestation-time-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dom\_gestation\_time\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ dom\_detail\_gestation\_time,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_gestation\_time.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ dom\_gestation\_time\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{dom\_gestation\_time\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-92-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_dom\_detail\_gestation\_time =} \FunctionTok{median}\NormalTok{(dom\_detail\_gestation\_time),}
+    \AttributeTok{mean\_dom\_detail\_gestation\_time =} \FunctionTok{mean}\NormalTok{(dom\_detail\_gestation\_time)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_dom\_detail\_gestation\_time)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 4 x 4
+##   graph_type               reps median_dom_detail_gesta~1 mean_dom_detail_gest~2
+##   <fct>                   <int>                     <dbl>                  <dbl>
+## 1 toroidal-lattice_2x1800    50                      392.                   660.
+## 2 toroidal-lattice_60x60     50                      378                    569.
+## 3 toroidal-lattice_15x240    50                      332.                   508.
+## 4 cycle                      50                      126.                   166.
+## # i abbreviated names: 1: median_dom_detail_gestation_time,
+## #   2: mean_dom_detail_gestation_time
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ dom\_detail\_gestation\_time }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  dom_detail_gestation_time by graph_type
+## Kruskal-Wallis chi-squared = 77.537, df = 3, p-value < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{dom\_detail\_gestation\_time,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{dom\_detail\_gestation\_time\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(dom\_detail\_gestation\_time\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_detail\_gestation\_time\_wc\_table.pdf"}\NormalTok{))}
+
+\NormalTok{dom\_detail\_gestation\_time\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r}
+\hline
+  & toroidal-lattice\_60x60 & toroidal-lattice\_15x240 & toroidal-lattice\_2x1800\\
+\hline
+toroidal-lattice\_15x240 & 0.8010941 & NA & NA\\
+\hline
+toroidal-lattice\_2x1800 & 1.0000000 & 1 & NA\\
+\hline
+cycle & 0.0000000 & 0 & 0\\
+\hline
+\end{tabular}
+\end{table}
+
+\hypertarget{dominant-genome-length-1}{%
+\section{Dominant genome length}\label{dominant-genome-length-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dom\_genome\_length\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ dom\_detail\_genome\_length,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_genome\_length.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ dom\_genome\_length\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{dom\_genome\_length\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-95-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_dom\_detail\_genome\_length =} \FunctionTok{median}\NormalTok{(dom\_detail\_genome\_length),}
+    \AttributeTok{mean\_dom\_detail\_genome\_length =} \FunctionTok{mean}\NormalTok{(dom\_detail\_genome\_length)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_dom\_detail\_genome\_length)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 4 x 4
+##   graph_type               reps median_dom_detail_genom~1 mean_dom_detail_geno~2
+##   <fct>                   <int>                     <dbl>                  <dbl>
+## 1 toroidal-lattice_60x60     50                      191                   252. 
+## 2 toroidal-lattice_15x240    50                      174                   203. 
+## 3 toroidal-lattice_2x1800    50                      112.                  134. 
+## 4 cycle                      50                       60                    65.4
+## # i abbreviated names: 1: median_dom_detail_genome_length,
+## #   2: mean_dom_detail_genome_length
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ dom\_detail\_genome\_length }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ data}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  dom_detail_genome_length by graph_type
+## Kruskal-Wallis chi-squared = 133.54, df = 3, p-value < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{dom\_detail\_genome\_length,}
+  \AttributeTok{g =}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{dom\_detail\_genome\_length\_wc\_table }\OtherTok{\textless{}{-}} \FunctionTok{kbl}\NormalTok{(wc\_results}\SpecialCharTok{$}\NormalTok{p.value) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{kable\_styling}\NormalTok{()}
+\FunctionTok{save\_kable}\NormalTok{(dom\_detail\_genome\_length\_wc\_table, }\FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/dom\_detail\_genome\_length\_wc\_table.pdf"}\NormalTok{))}
+
+\NormalTok{dom\_detail\_genome\_length\_wc\_table}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{table}
+\centering
+\begin{tabular}[t]{l|r|r|r}
+\hline
+  & toroidal-lattice\_60x60 & toroidal-lattice\_15x240 & toroidal-lattice\_2x1800\\
+\hline
+toroidal-lattice\_15x240 & 0.0972676 & NA & NA\\
+\hline
+toroidal-lattice\_2x1800 & 0.0000000 & 1e-07 & NA\\
+\hline
+cycle & 0.0000000 & 0e+00 & 0\\
+\hline
+\end{tabular}
+\end{table}
+
+\hypertarget{task-profile-entropy-1}{%
+\section{Task profile entropy}\label{task-profile-entropy-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{task\_profile\_entropy\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ task\_profile\_entropy,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/task\_profile\_entropy.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ task\_profile\_entropy\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{task\_profile\_entropy\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-98-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{task\_profile\_count\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ task\_profile\_count,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/task\_profile\_count.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ task\_profile\_count\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{task\_profile\_count\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-99-1.pdf}
+
+\hypertarget{average-generation-1}{%
+\section{Average generation}\label{average-generation-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{avg\_generation\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ time\_average\_generation,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/avg\_generation.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ avg\_generation\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{avg\_generation\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-100-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{reps =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{median\_time\_average\_generation =} \FunctionTok{median}\NormalTok{(time\_average\_generation),}
+    \AttributeTok{mean\_time\_average\_generation =} \FunctionTok{mean}\NormalTok{(time\_average\_generation)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}
+    \FunctionTok{desc}\NormalTok{(mean\_time\_average\_generation)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 4 x 4
+##   graph_type               reps median_time_average_gen~1 mean_time_average_ge~2
+##   <fct>                   <int>                     <dbl>                  <dbl>
+## 1 cycle                      50                    86561.                 93949.
+## 2 toroidal-lattice_2x1800    50                    48531.                 46331.
+## 3 toroidal-lattice_15x240    50                    46955.                 41302.
+## 4 toroidal-lattice_60x60     50                    41905.                 39813.
+## # i abbreviated names: 1: median_time_average_generation,
+## #   2: mean_time_average_generation
+\end{verbatim}
+
+\hypertarget{population-task-count-over-time-1}{%
+\section{Population task count over time}\label{population-task-count-over-time-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pop\_task\_cnt\_ts }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ time\_series\_data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ update,}
+      \AttributeTok{y =}\NormalTok{ pop\_task\_total\_tasks\_done,}
+      \AttributeTok{color =}\NormalTok{ graph\_type,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{stat\_summary}\NormalTok{(}\AttributeTok{fun =} \StringTok{"mean"}\NormalTok{, }\AttributeTok{geom =} \StringTok{"line"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{stat\_summary}\NormalTok{(}
+    \AttributeTok{fun.data =} \StringTok{"mean\_cl\_boot"}\NormalTok{,}
+    \AttributeTok{fun.args =} \FunctionTok{list}\NormalTok{(}\AttributeTok{conf.int =} \FloatTok{0.95}\NormalTok{),}
+    \AttributeTok{geom =} \StringTok{"ribbon"}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.2}\NormalTok{,}
+    \AttributeTok{linetype =} \DecValTok{0}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{plot =}\NormalTok{ pop\_task\_cnt\_ts,}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(}
+\NormalTok{    working\_directory,}
+    \StringTok{"/plots/pop\_tasks\_ts.pdf"}
+\NormalTok{  ),}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{pop\_task\_cnt\_ts}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-102-1.pdf}
+
+\hypertarget{average-generation-over-time-1}{%
+\section{Average generation over time}\label{average-generation-over-time-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{time\_average\_generation\_ts }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ time\_series\_data,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ update,}
+      \AttributeTok{y =}\NormalTok{ time\_average\_generation,}
+      \AttributeTok{color =}\NormalTok{ graph\_type,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{stat\_summary}\NormalTok{(}\AttributeTok{fun =} \StringTok{"mean"}\NormalTok{, }\AttributeTok{geom =} \StringTok{"line"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{stat\_summary}\NormalTok{(}
+    \AttributeTok{fun.data =} \StringTok{"mean\_cl\_boot"}\NormalTok{,}
+    \AttributeTok{fun.args =} \FunctionTok{list}\NormalTok{(}\AttributeTok{conf.int =} \FloatTok{0.95}\NormalTok{),}
+    \AttributeTok{geom =} \StringTok{"ribbon"}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.2}\NormalTok{,}
+    \AttributeTok{linetype =} \DecValTok{0}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{facet\_wrap}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{ENVIRONMENT\_FILE) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{plot =}\NormalTok{ time\_average\_generation\_ts,}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(}
+\NormalTok{    working\_directory,}
+    \StringTok{"/plots/time\_average\_generation\_ts.pdf"}
+\NormalTok{  ),}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{time\_average\_generation\_ts}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-103-1.pdf}
+
+\hypertarget{graph-location-info-1}{%
+\section{Graph location info}\label{graph-location-info-1}}
+
+Analyze graph\_birth\_info\_annotated.csv
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Load summary data from final update}
+\NormalTok{graph\_loc\_data\_path }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"data"}\NormalTok{,}
+  \StringTok{"graph\_birth\_info\_annotated.csv"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\NormalTok{graph\_loc\_data }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(graph\_loc\_data\_path)}
+
+\NormalTok{graph\_loc\_data }\OtherTok{\textless{}{-}}\NormalTok{ graph\_loc\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{graph\_type =} \FunctionTok{factor}\NormalTok{(}
+\NormalTok{      graph\_type,}
+      \AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}
+        \StringTok{"toroidal{-}lattice\_60x60"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_30x120"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_15x240"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_4x900"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_3x1200"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_2x1800"}\NormalTok{,}
+        \StringTok{"cycle"}
+\NormalTok{      )}
+\NormalTok{    ),}
+    \AttributeTok{seed =} \FunctionTok{as.factor}\NormalTok{(seed)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(}
+\NormalTok{    graph\_type }\SpecialCharTok{\%in\%}\NormalTok{ focal\_graphs}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+Summarize by seed
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{graph\_loc\_data\_summary }\OtherTok{\textless{}{-}}\NormalTok{ graph\_loc\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(seed, graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{births\_var =} \FunctionTok{var}\NormalTok{(births),}
+    \AttributeTok{births\_total =} \FunctionTok{sum}\NormalTok{(births),}
+    \AttributeTok{task\_apps\_total =} \FunctionTok{sum}\NormalTok{(task\_appearances),}
+    \AttributeTok{task\_apps\_var =} \FunctionTok{var}\NormalTok{(task\_appearances)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ungroup}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{total-birth-counts-1}{%
+\subsection{Total birth Counts}\label{total-birth-counts-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{birth\_counts\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ graph\_loc\_data\_summary,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ births\_total,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/birth\_counts\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ birth\_counts\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{birth\_counts\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-106-1.pdf}
+
+\hypertarget{variance-birth-counts-1}{%
+\subsection{Variance birth Counts}\label{variance-birth-counts-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{birth\_counts\_var\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ graph\_loc\_data\_summary,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ births\_var,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/birth\_counts\_var.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ birth\_counts\_var\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{birth\_counts\_var\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-107-1.pdf}
+
+\hypertarget{task-appearances-total-1}{%
+\subsection{Task appearances total}\label{task-appearances-total-1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{task\_apps\_total\_plt }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ graph\_loc\_data\_summary,}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ task\_apps\_total,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/task\_apps\_total.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ task\_apps\_total\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{task\_apps\_total\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-108-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{kruskal.test}\NormalTok{(}
+  \AttributeTok{formula =}\NormalTok{ task\_apps\_total }\SpecialCharTok{\textasciitilde{}}\NormalTok{ graph\_type,}
+  \AttributeTok{data =}\NormalTok{ graph\_loc\_data\_summary}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Kruskal-Wallis rank sum test
+## 
+## data:  task_apps_total by graph_type
+## Kruskal-Wallis chi-squared = 15.09, df = 3, p-value = 0.001742
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{wc\_results }\OtherTok{\textless{}{-}} \FunctionTok{pairwise.wilcox.test}\NormalTok{(}
+  \AttributeTok{x =}\NormalTok{ graph\_loc\_data\_summary}\SpecialCharTok{$}\NormalTok{task\_apps\_total,}
+  \AttributeTok{g =}\NormalTok{ graph\_loc\_data\_summary}\SpecialCharTok{$}\NormalTok{graph\_type,}
+  \AttributeTok{p.adjust.method   =} \StringTok{"holm"}\NormalTok{,}
+  \AttributeTok{exact =} \ConstantTok{FALSE}
+
+\NormalTok{)}
+\NormalTok{wc\_results}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Pairwise comparisons using Wilcoxon rank sum test with continuity correction 
+## 
+## data:  graph_loc_data_summary$task_apps_total and graph_loc_data_summary$graph_type 
+## 
+##                         toroidal-lattice_60x60 toroidal-lattice_15x240
+## toroidal-lattice_15x240 0.771                  -                      
+## toroidal-lattice_2x1800 0.125                  0.125                  
+## cycle                   0.128                  0.125                  
+##                         toroidal-lattice_2x1800
+## toroidal-lattice_15x240 -                      
+## toroidal-lattice_2x1800 -                      
+## cycle                   0.002                  
+## 
+## P value adjustment method: holm
+\end{verbatim}
+
+\hypertarget{morans-i-results}{%
+\section{Moran's I results}\label{morans-i-results}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Load summary data from final update}
+\NormalTok{morans\_i\_data\_path }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}
+\NormalTok{  working\_directory,}
+  \StringTok{"data"}\NormalTok{,}
+  \StringTok{"morans\_i.csv"}\NormalTok{,}
+  \AttributeTok{sep =} \StringTok{"/"}
+\NormalTok{)}
+\NormalTok{morans\_i\_data }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(morans\_i\_data\_path)}
+
+\NormalTok{morans\_i\_data }\OtherTok{\textless{}{-}}\NormalTok{ morans\_i\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{graph\_type =} \FunctionTok{str\_split\_i}\NormalTok{(}
+\NormalTok{      graph\_file,}
+      \AttributeTok{pattern =} \StringTok{".mat"}\NormalTok{,}
+      \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{graph\_type =} \FunctionTok{factor}\NormalTok{(}
+\NormalTok{      graph\_type,}
+      \AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}
+        \StringTok{"toroidal{-}lattice\_60x60"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_30x120"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_15x240"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_4x900"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_3x1200"}\NormalTok{,}
+        \StringTok{"toroidal{-}lattice\_2x1800"}\NormalTok{,}
+        \StringTok{"cycle"}
+\NormalTok{      )}
+\NormalTok{    ),}
+    \AttributeTok{seed =} \FunctionTok{as.factor}\NormalTok{(seed)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(}
+\NormalTok{    graph\_type }\SpecialCharTok{\%in\%}\NormalTok{ focal\_graphs}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{clustered-task-appearances}{%
+\subsection{Clustered task appearances}\label{clustered-task-appearances}}
+
+Summarize statistically significant runs where I \textgreater{} 0.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Identify number of runs where distribution of task appearances is more}
+\CommentTok{\# clustered than we would expect by chance.}
+\NormalTok{clustered\_counts }\OtherTok{\textless{}{-}}\NormalTok{ morans\_i\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(}
+\NormalTok{    (task\_morans\_i }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) }\SpecialCharTok{\&}\NormalTok{ (task\_p\_val }\SpecialCharTok{\textless{}=} \FloatTok{0.05}\NormalTok{)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(graph\_type) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarize}\NormalTok{(}
+    \AttributeTok{n =} \FunctionTok{n}\NormalTok{()}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tasks\_clustered\_plt }\OtherTok{\textless{}{-}}\NormalTok{ clustered\_counts }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ n,}
+      \AttributeTok{color =}\NormalTok{ graph\_type,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_col}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/tasks\_clustered\_plt.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ tasks\_clustered\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{tasks\_clustered\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-112-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tasks\_clustered\_i\_vals\_plt }\OtherTok{\textless{}{-}}\NormalTok{ morans\_i\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{((task\_morans\_i }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) }\SpecialCharTok{\&}\NormalTok{ (task\_p\_val }\SpecialCharTok{\textless{}=} \FloatTok{0.05}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ task\_morans\_i,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/tasks\_clustered\_i\_vals\_plt.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ tasks\_clustered\_i\_vals\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{tasks\_clustered\_i\_vals\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-113-1.pdf}
+
+\hypertarget{clustered-birth-counts}{%
+\subsection{Clustered birth counts}\label{clustered-birth-counts}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{births\_clustered\_plot }\OtherTok{\textless{}{-}}\NormalTok{ morans\_i\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{((birth\_morans\_i }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) }\SpecialCharTok{\&}\NormalTok{ (birth\_p\_val }\SpecialCharTok{\textless{}=} \FloatTok{0.05}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{color =}\NormalTok{ graph\_type,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_bar}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/births\_clustered\_plot.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ births\_clustered\_plot,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{births\_clustered\_plot}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-114-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{birth\_clustered\_i\_vals\_plt }\OtherTok{\textless{}{-}}\NormalTok{ morans\_i\_data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{((birth\_morans\_i }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) }\SpecialCharTok{\&}\NormalTok{ (birth\_p\_val }\SpecialCharTok{\textless{}=} \FloatTok{0.05}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}
+    \AttributeTok{mapping =} \FunctionTok{aes}\NormalTok{(}
+      \AttributeTok{x =}\NormalTok{ graph\_type,}
+      \AttributeTok{y =}\NormalTok{ birth\_morans\_i,}
+      \AttributeTok{fill =}\NormalTok{ graph\_type}
+\NormalTok{    )}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_flat\_violin}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_nudge}\NormalTok{(}\AttributeTok{x =}\NormalTok{ .}\DecValTok{2}\NormalTok{, }\AttributeTok{y =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =}\NormalTok{ .}\DecValTok{8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{mapping=}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ graph\_type),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =}\NormalTok{ .}\DecValTok{15}\NormalTok{),}
+    \AttributeTok{size =}\NormalTok{ .}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.8}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}
+    \AttributeTok{width =}\NormalTok{ .}\DecValTok{1}\NormalTok{,}
+    \AttributeTok{outlier.shape =} \ConstantTok{NA}\NormalTok{,}
+    \AttributeTok{alpha =} \FloatTok{0.5}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{,}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}
+      \AttributeTok{angle =} \DecValTok{30}\NormalTok{,}
+      \AttributeTok{hjust =} \DecValTok{1}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}
+  \AttributeTok{filename =} \FunctionTok{paste0}\NormalTok{(plot\_dir, }\StringTok{"/birth\_clustered\_i\_vals\_plt.pdf"}\NormalTok{),}
+  \AttributeTok{plot =}\NormalTok{ birth\_clustered\_i\_vals\_plt,}
+  \AttributeTok{width =} \DecValTok{15}\NormalTok{,}
+  \AttributeTok{height =} \DecValTok{10}
+\NormalTok{)}
+
+\NormalTok{birth\_clustered\_i\_vals\_plt}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{supplemental-material_files/figure-latex/unnamed-chunk-115-1.pdf}
+
   \bibliography{packages.bib,supplemental.bib}
 
 \end{document}
