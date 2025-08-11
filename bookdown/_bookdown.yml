@@ -7,7 +7,7 @@ rmd_files: ["index.Rmd",
             "../docs/data-availability.md",
             "../docs/compiling-experiment-software.md",
             "../experiments/mabe2-exps/vg-experiments/2025-04-22-analysis-vg.Rmd",
-            # "../experiments/mabe2-exps/lattice-experiments/2025-04-analysis-st.Rmd",
+            "../experiments/mabe2-exps/lattice-experiments/2025-04-analysis-st.Rmd",
             # "../experiments/2025-04-17-vary-structs/analysis/2025-04-17-varied-graphs.Rmd",
             # "../experiments/2025-04-17-squished-lattice-longer/analysis/2025-04-17-squished-lattice-longer.Rmd",
             "tail.Rmd"

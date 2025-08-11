@@ -1,4 +1,4 @@
-# Simple model - varied spatial structure experiment analyses
+# Simple model - Varied spatial structure experiment analyses
 
 ## Dependencies and setup
 
@@ -28,14 +28,13 @@ working_directory <- paste(
   sep = "/"
 )
 # Adjust working directory if being knitted for bookdown build.
-if (exists("bookdown")) {
-  if (bookdown) {
-    working_directory <- paste0(
-      bookdown_wd_prefix,
-      working_directory
-    )
-  }
+if (bookdown) {
+  working_directory <- paste0(
+    bookdown_wd_prefix,
+    working_directory
+  )
 }
+
 ```
 
 ```{r}
