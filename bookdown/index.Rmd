@@ -1,0 +1,47 @@
+---
+title: "Supplemental Material for Environmental connectivity influences long-term evolutionary outcomes"
+author: ""
+date: "`r Sys.Date()`"
+output: bookdown::gitbook
+documentclass: book
+bibliography: ["packages.bib", "supplemental.bib"]
+biblio-style: apalike
+nocite: '@*'
+link-citations: yes
+github-repo: amlalejini/alife-2025-env-conn
+description: "Supplemental material"
+---
+
+```{r, include=FALSE}
+bookdown_wd_prefix <- "../"
+bookdown_build <- TRUE
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+# Introduction
+
+This is the supplemental material our 2025 Artificial Life Conference paper, "Environmental connectivity influences long-term evolutionary outcomes".
+This is not intended as a stand-alone document, but as a companion to our main manuscript.
+
+## About our supplemental material
+
+Our supplemental material is hosted using [GitHub pages](https://pages.github.com/).
+We compiled our data analyses and supplemental documentation into this web-accessible book using [bookdown](https://bookdown.org).
+
+The source code and configuration files for this supplemental material can be found in [this GitHub repository](https://github.com/amlalejini/alife-2025-env-conn).
+
+Our supplemental material includes the following:
+
+- Data availability
+  (Section \@ref(data-availability))
+- Local compilation instructions
+  (Section \@ref(compilation-instructions))
+- TODO
+
+
+## Contributing authors
+
+- Grant Gordon
+- [Austin J. Ferguson](https://fergusonaj.github.io/)
+- [Emily Dolson](https://ecodelab.com/)
+- [Alexander Lalejini](https://lalejini.com)
