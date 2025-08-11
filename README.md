@@ -1,5 +1,6 @@
 # Environmental connectivity influences long-term evolutionary outcomes
 
+[![supplemental](https://img.shields.io/badge/go%20to-supplemental%20material-ff69b4)](https://lalejini.com/alife-2025-env-conn/web-supplement)
 [![DOI](https://zenodo.org/badge/1036101318.svg)](https://doi.org/10.5281/zenodo.16795777)
 [![OSF](https://img.shields.io/badge/data%20%40%20OSF-10.17605%2FOSF.IO%2FAHS6M-blue)](https://osf.io/ahs6m/)
 
